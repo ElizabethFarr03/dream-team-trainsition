@@ -356,6 +356,68 @@
     .open-row { grid-template-columns: 1fr; }
     .item { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
   }
+
+  /* Rally table */
+  .table-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  table.rally-table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 420px;
+    background: var(--paper-raised);
+  }
+  table.rally-table thead th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-align: left;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+  }
+  table.rally-table tbody td {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--paper-line);
+    vertical-align: middle;
+  }
+  table.rally-table tbody tr:last-child td { border-bottom: none; }
+  .date-cell {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+  .date-cell .dow { display: block; font-size: 0.72rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.15rem; }
+  tr.last-sunday td { background: var(--open-soft); }
+  tr.last-sunday .date-cell::after {
+    content: "Last Sunday";
+    display: block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--open);
+    margin-top: 0.25rem;
+  }
+  .name-input {
+    width: 100%;
+    min-width: 160px;
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.92rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.45rem 0.6rem;
+  }
+  .name-input::placeholder { color: var(--ink-muted); opacity: 0.7; }
+  .name-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 </style>
 
 <div class="wrap">
@@ -590,6 +652,22 @@
     </ul>
   </section>
 
+  <section>
+    <div class="sec-head">
+      <span class="sec-tag">G</span>
+      <h2>Sunday rally plan</h2>
+    </div>
+    <p class="sec-note">One rally leader covers all four services that Sunday &mdash; 7:20, 9:10, 10:45, 3:50 &mdash; rotating to a different person each week. Every rally stays 3&ndash;5 minutes. Catherine sends that week's flow to the rally leader every Thursday, adds them to the DT Rally Text, and decides with the team who to honor during the 7:20 rally.</p>
+    <div class="table-scroll">
+      <table class="rally-table">
+        <thead>
+          <tr><th>Sunday</th><th>Rally leader</th></tr>
+        </thead>
+        <tbody id="rally-body"></tbody>
+      </table>
+    </div>
+  </section>
+
   <footer>
     <span>Last updated Sep 8, 2026</span>
     <span>Elizabeth &middot; Dream Team transition</span>
@@ -621,4 +699,52 @@
       item.classList.toggle('done', box.checked);
     });
   });
+
+  (function () {
+    var sundays = [
+      "2026-09-13", "2026-09-20", "2026-09-27",
+      "2026-10-04", "2026-10-11", "2026-10-18", "2026-10-25",
+      "2026-11-01", "2026-11-08", "2026-11-15", "2026-11-22", "2026-11-29"
+    ];
+    var lastSunday = "2026-09-20";
+    var dowNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    var monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var body = document.getElementById("rally-body");
+    if (!body) return;
+
+    function storageKey(iso) { return "rally-leader-" + iso; }
+    function loadValue(iso) {
+      try { return localStorage.getItem(storageKey(iso)) || ""; } catch (e) { return ""; }
+    }
+    function saveValue(iso, value) {
+      try { localStorage.setItem(storageKey(iso), value); } catch (e) { /* unavailable */ }
+    }
+
+    sundays.forEach(function (iso) {
+      var d = new Date(iso + "T00:00:00");
+      var label = monthNames[d.getMonth()] + " " + d.getDate();
+      var isLast = iso === lastSunday;
+
+      var tr = document.createElement("tr");
+      if (isLast) tr.className = "last-sunday";
+
+      var dateTd = document.createElement("td");
+      dateTd.className = "date-cell";
+      dateTd.innerHTML = '<span class="dow">' + dowNames[d.getDay()] + '</span>' + label;
+      tr.appendChild(dateTd);
+
+      var nameTd = document.createElement("td");
+      var input = document.createElement("input");
+      input.type = "text";
+      input.className = "name-input";
+      input.placeholder = "Type a name";
+      input.value = loadValue(iso);
+      input.setAttribute("aria-label", "Rally leader for " + label);
+      input.addEventListener("input", function () { saveValue(iso, input.value); });
+      nameTd.appendChild(input);
+      tr.appendChild(nameTd);
+
+      body.appendChild(tr);
+    });
+  })();
 </script>
